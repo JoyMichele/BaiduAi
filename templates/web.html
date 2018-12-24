@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<audio src="" controls autoplay id="player"></audio>
+<p>
+    <button onclick="start_reco()" style="background-color: red">录制消息</button>
+</p>
+<p>
+    <button onclick="stop_reco()" style="background-color: green">发送消息</button>
+</p>
+</body>
+<script type="text/javascript" src="/static/jquery-3.3.1.min.js"></script>
+<script type="text/javascript" src="/static/Recorder.js"></script>
+<script type="text/javascript">
+    var serv = "http://127.0.0.1:5000";
+    // var get_music = "http://192.168.1.102:9527/get_music/";
+    // var get_chat = "http://192.168.1.102:9527/get_chat/";
+    var reco = null;
+
+    var audio_context = new AudioContext();
+    navigator.getUserMedia = (navigator.getUserMedia ||
+        navigator.webkitGetUserMedia ||
+        navigator.mozGetUserMedia ||
+        navigator.msGetUserMedia);
+
+    navigator.getUserMedia({audio: true}, create_stream, function (err) {
+        console.log(err)
+    });
+
+    function create_stream(user_media) {
+        var stream_input = audio_context.createMediaStreamSource(user_media);
+        reco = new Recorder(stream_input);
+    }
+
+    function start_reco() {
+        reco.record();
+    }
+
+    function stop_reco() {
+        reco.stop();
+        get_audio();
+        reco.clear();
+    }
+
+    function get_audio() {
+        reco.exportWAV(function (wav_file) {
+            // wav_file = Blob对象 file对象
+            // ws.send(wav_file);
+            var formdata = new FormData();
+            formdata.append("record", wav_file);
+            // formdata.append("sender", toy_id);
+            // formdata.append("to_user", document.getElementById("from_user").innerText);
+            $.ajax({
+                url: serv + "/toy_uploader",
+                type: 'post',
+                processData: false,
+                contentType: false,
+                data: formdata,
+                dataType: 'json',
+                success: function (data) {
+                    console.log(data.answer);
+                    console.log(data);
+
+                    document.getElementById("player").src =
+                        "http://127.0.0.1:5000/get_audio/" + data.content;
+
+
+                }
+            });
+
+        })
+    }
+
+
+
+
+
+</script>
+</html>
